@@ -2,6 +2,7 @@
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 [![B3 Project](https://img.shields.io/badge/B3-Biodiversity%20Building%20Blocks%20for%20Policy-blue)](https://b-cubed.eu/)
 
+![download](https://github.com/user-attachments/assets/495c8f6a-b298-4006-9836-d766b7c2d8b9)
 
 
 ## 📦 Required Packages
