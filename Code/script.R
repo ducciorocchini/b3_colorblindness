@@ -85,7 +85,7 @@ explot2
 explot + explot2
 
 # solving the issues related to different diseases
-rainbow <- rast("rainbow.jpg")
+rainbow <- im.import("NDVI_rainbow.png")
 rainbow <- flip(rainbow)
 plot(rainbow)
 cblind.plot(rainbow, cvd= "protanopia")
