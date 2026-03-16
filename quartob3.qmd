@@ -1,0 +1,243 @@
+---
+title: "From Data Cubes to Inclusive Views: Color-Blind-Friendly Ecological Mapping"
+author: Duccio Rocchini
+format:
+  revealjs:
+    self-contained: true
+editor: visual
+---
+
+# Cubes in B3
+
+## Data cubes
+
+![](../images/suitability_cube.png){fig-align="center" width="70%"}
+
+## Sampling
+
+![](../images/sampling.png){fig-align="center" width="\"70%"}
+
+## Maps of species distributions
+
+![](../images/suitability_map.png){fig-align="center" width="\"70%"}
+
+Rocchini et al. (2023). A quixotic view of spatial bias in modelling the distribution of species and their diversity. npj Biodiversity, 2: article number 10.
+
+## Community maps
+
+![](../images/community_map.png){fig-align="center" width="\"70%"}
+
+# Background: the issue
+
+## Perception of reality through colors
+
+![](../images/ndvi_perception.png){fig-align="center" width="70%"}
+
+## Aim
+
+-   Introducing the issue of \textbf{colorblindness} in remote sensing data outputs
+-   Proposing algorithms to \textbf{solve the issue} in a straightfoward manner
+
+## Free and Open Source Software
+
+![](../images/TREE.png){fig-align="center" width="70%"}
+
+## Colors in the electromagnetic spectrum
+
+![](../images/electromagnetic_spectrum.png){fig-align="center" width="70%"}
+
+## Daltonism
+
+![](../images/diseases_occhioplus.png){fig-align="center" width="70%"}
+
+## Colors for colorblind people can lead to an \`\`alien'' perception of reality
+
+![](../images/alien_rainbow.png){fig-align="center" width="70%"}
+
+## Rainbow color palettes in scientific papers
+
+![](../images/simul1.png){fig-align="center" width="70%"}
+
+## Rainbow color palettes in scientific papers
+
+![](../images/rasterdiv_ms2.png){fig-align="center" width="70%"}
+
+# How to solve the issue
+
+## Cramieri et al. - Misuse of colors
+
+![](../images/cramieri2.png){fig-align="center" width="70%"}
+
+## The `viridis` R package
+
+```{r vir, echo = TRUE}
+library(viridis)
+citation("viridis")
+```
+
+## The `viridis` R package palettes
+
+![](../images/viridis_palettes.png){fig-align="center" width="70%"}
+
+## Palette translation
+
+![](../images/viridis_palettes_blind.png){fig-align="center" width="70%"}
+
+## The `cblindplot` R package
+
+```{r cblind, echo = TRUE}
+library(cblindplot)
+citation("cblindplot")
+```
+
+## Algorithmic viewpoint
+
+![](../images/flow_cblindplot.png){fig-align="center" width="70%"}
+
+## The `cblind.plot()` function
+
+```{r cblindplot, echo = TRUE}
+cblind.plot
+```
+
+## Scientific basis
+
+![](../images/vienot.png){fig-align="center" width="70%"}
+
+## The output
+
+![](../images/rasterdiv_strict_highres2.png){fig-align="center" width="70%"}
+
+# Challenges
+
+## PCA problems in managing minima and maxima
+
+![](../images/nakamura_pca.png){fig-align="center" width="70%"}
+
+## Neural networksby the `nncblind()` function
+
+```{r bb, echo = TRUE, eval=FALSE}
+nncblind <- function(im, cvd = c("protanopia", "deuteranopia", "tritanopia"), r = 1, g = 2, b = 3) {
+
+  #Controllo cvd
+  cvd <- cvd[1]
+  if(!cvd %in% c("protanopia", "deuteranopia", "tritanopia")) stop("Wrong 'cvd` value. It can be 'protanopia', 'deuteranopia', or 'tritanopia'")
+
+  #Controllo immagine
+  if (!inherits(im, "SpatRaster") && !inherits(im, "RasterLayer") && !inherits(im, "RasterStack") && !inherits(im, "RasterBrick") && !inherits(im, "list") && !inherits(im, "character")){
+    stop("'im' must be a raster object, a list or a path to an image")
+  } else if (inherits(im, "RasterLayer") || inherits(im, "RasterStack") || inherits(im, "RasterBrick") || is.character(im)){
+    suppressWarnings(im <- terra::rast(im))
+  } else if (inherits(im, "list")){
+    invisible(lapply(im, function(x) if(!inherits(x, "SpatRaster")) stop("all the elements of the list must be SpatRaster objects")))
+    suppressWarnings(im <- terra::rast(im))
+  }
+
+  # Preparazione dati
+  df <- as.data.frame(im, xy = T)
+  df_mod <- data.frame(df[,1], df[,2], df[,(r + 2)], df[,(g + 2)], df[,(b + 2)])
+  colnames(df_mod) <- c("x", "y", "R", "G", "B")
+
+  # Convertire in character i valori delle colonne R, G, B al fine di renderle compatibili con il modello nnet
+  df_mod$R = as.character(R)
+  df_mod$G = as.character(G)
+  df_mod$B = as.character(B)
+
+  # Richiamare il modello mdNNea
+  load("R/sysdata.rda")
+  mdNN <- mdnew
+
+  # Predirre il colore e inserirlo nel dataframe
+  colors <- stats::predict(mdNN, df_mod[, c(3,4,5)], type = "class")
+  col <- cbind(df_mod, colors)
+
+  # Divisione colori
+  white <- col[col$colors == "white",]
+  red <- col[col$colors == "red",]
+  brown <- col[col$colors == "brown",]
+  orange <- col[col$colors == "orange",]
+  yellow <- col[col$colors == "yellow",]
+  lightgreen <- col[col$colors == "lightgreen",]
+  green <- col[col$colors == "green",]
+  lightblue <- col[col$colors == "lightblue",]
+  blue <- col[col$colors == "blue",]
+  pink <- col[col$colors == "pink",]
+  violet <- col[col$colors == "violet",]
+  grey <- col[col$colors == "grey",]
+  black <- col[col$colors == "black",]
+
+  # Unire i colori
+  unir <- rbind(white, red, orange, brown, yellow, lightgreen, green, lightblue, blue, violet, pink, grey, black)
+
+  # Creare scala discreta
+
+  # Creazione della colonna
+  fin <- cbind(unir, values = "")
+
+  # Mettere i numeri ai colori
+  fin[fin$colors == "white", "values"] <- 1
+  fin[fin$colors == "red", "values"] <- 2
+  fin[fin$colors == "orange", "values"] <- 3
+  fin[fin$colors == "brown", "values"] <- 4
+  fin[fin$colors == "yellow", "values"] <- 5
+  fin[fin$colors == "lightgreen", "values"] <- 6
+  fin[fin$colors == "green", "values"] <- 7
+  fin[fin$colors == "lightblue", "values"] <- 8
+  fin[fin$colors == "blue", "values"] <- 9
+  fin[fin$colors == "violet", "values"] <- 10
+  fin[fin$colors == "pink", "values"] <- 11
+  fin[fin$colors == "grey", "values"] <- 12
+  fin[fin$colors == "black", "values"] <- 13
+
+  # Ordinare i values
+  fin$values = factor(values, levels = c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"))
+
+  # Ordinare la palette di colore da mostrare nelle immagini per le diverse malattie
+  if(cvd == "deuteranopia") {
+    # con la deuteranopia
+    ord_pal <-  c("#FFFFFF", "#FF4040", "#FFC040", "#8B4513", "#FFFF00", "#88FF33", "#00FF00", "#CCFFFF", "#0000FF", "#660066", "#FFD1D9", "#808080", "#000000")
+
+  } else if(cvd == "protanopia") {
+    # con la protanopia
+    ord_pal <-  c("#FFFFFF", "#FF4040", "#FFD280", "#8B4513", "#FFFF33", "#228B22", "#006600", "#CCFFFF", "#0000FF", "#993399", "#FFD1D9", "#808080", "#000000")
+
+  } else if(cvd == "tritanopia") {
+    # con la tritanopia
+    ord_pal <-  c("#FFFFFF", "#FF0000", "#FFD280", "#8B4513", "#CCCC00", "#228B22", "#008000", "#CCCCCC", "#7FFF7F", "#FF0000", "#FF4040", "#808080", "#000000")
+
+  }
+
+  # Creazione del ggplot
+  ggt <- ggplot2::ggplot(fin, ggplot2::aes(x = x, y = y, fill = values)) +
+    ggplot2::geom_raster() +
+    ggplot2::scale_fill_manual(values = ord_pal[unique(fin$values)], na.value = "transparent") +
+    ggplot2::coord_sf() +
+    ggplot2::theme(legend.position = "bottom")
+
+  return(ggt)
+}
+```
+
+## Coda
+
+![](../images/alien_daltonic.png){fig-align="center" width="70%"}
+
+## Additional insights
+
+![](../images/R_coding.png){fig-align="center" width="70%"}
+
+## Many thanks!
+
+Contact:
+
+Duccio Rocchini, PhD
+
+Full Professor at: BIOME Lab, University of Bologna, Italy
+
+[duccio.rocchini\@unibo.it](mailto:duccio.rocchini@unibo.it){.email}
+
+This presentation has been developed using R, Markdown, and Quarto. The open-source code is available at:
+
+::: {style="text-align: center;"}
+![](../images/github_profile_qr.png){align="center" fig-align="center" width="20%"}
+:::
