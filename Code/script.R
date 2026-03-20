@@ -7,8 +7,6 @@ library(colorblindr)
 library(patchwork)
 library(cblindplot)
 
-setwd("~/Desktop/")
-
 im.list()
 
 sent <- im.import("sentinel.dolomites")
@@ -48,6 +46,8 @@ plot(ndvi, col=palraw_grey)
 # Vinicunca
 
 dev.off()
+
+setwd("~/Downloads/")
 
 vin <- rast("vinicunca.jpg")
 vin <- flip(vin)
